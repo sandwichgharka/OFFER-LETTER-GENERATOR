@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offer Letter Generator | Sandwich Ghar Ka</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* --- Deli counter palette (light) --- */
+            --ink: #ffffff;
+            --ink-raised: #f7f4ec;
+            --ink-line: #e6ddc9;
+            --cream: #241d15;
+            --fog: #7d7263;
+
+            --paper: #faf3e6;
+            --paper-line: #e7dcc7;
+
+            --mustard: #e3a730;
+            --mustard-deep: #b9821f;
+            --mustard-wash: rgba(227,167,48,0.14);
+
+            --tomato: #c1442d;
+            --tomato-deep: #9c3320;
+            --olive: #7a8a52;
+            --olive-deep: #5e6b3e;
+
+            --radius: 14px;
+            --radius-sm: 8px;
+            --shadow-panel: 0 20px 40px -20px rgba(0,0,0,0.5);
+            --shadow-paper: 0 10px 30px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.1);
+
+            --font-display: 'Fraunces', 'Times New Roman', serif;
+            --font-body: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--ink);
+            color: var(--cream);
+            line-height: 1.5;
+        }
+
+        ::selection { background: var(--mustard); color: var(--cream); }
+
+        a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, .step-header:focus-visible, .history-badge:focus-visible {
+            outline: 2px solid var(--mustard);
+            outline-offset: 2px;
+        }
+
+        .app-container { display: flex; min-height: 100vh; }
+
+        .form-panel {
+            width: 460px;
+            flex-shrink: 0;
+            background: radial-gradient(circle at 15% 0%, rgba(227,167,48,0.06), transparent 45%), var(--ink);
+            border-right: 1px solid var(--ink-line);
+            padding: 28px 28px 22px;
+            overflow-y: auto;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .form-panel::-webkit-scrollbar { width: 8px; }
+        .form-panel::-webkit-scrollbar-thumb { background: var(--ink-line); border-radius: 8px; }
+        .form-panel::-webkit-scrollbar-track { background: transparent; }
+
+        .app-header { margin-bottom: 22px; }
+        .header-top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .brand-mark { display: flex; align-items: center; gap: 12px; }
+        .brand-icon {
+            width: 42px; height: 42px; border-radius: 10px;
+            background: linear-gradient(155deg, var(--mustard), var(--mustard-deep));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; flex-shrink: 0;
+            box-shadow: 0 4px 14px rgba(227,167,48,0.25);
+        }
+        .app-header h1 { font-family: var(--font-display); font-size: 19px; font-weight: 600; color: var(--cream); letter-spacing: 0.2px; line-height: 1.25; }
+        .app-header p { color: var(--fog); font-size: 11.5px; margin-top: 3px; font-family: var(--font-mono); letter-spacing: 0.3px; }
+
+        .history-badge {
+            background: var(--ink-raised); color: var(--cream); border: 1px solid var(--ink-line);
+            border-radius: 20px; padding: 7px 14px 7px 10px; font-size: 12px; font-weight: 600;
+            font-family: var(--font-mono); white-space: nowrap; cursor: pointer; transition: all 0.18s;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .history-badge:hover { border-color: var(--mustard); color: var(--mustard); transform: translateY(-1px); }
+        .history-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--olive); box-shadow: 0 0 0 3px rgba(122,138,82,0.2); }
+
+        .stepper { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; position: relative; }
+        .stepper::before { content: ''; position: absolute; top: 17px; left: 34px; right: 34px; height: 2px; background: var(--ink-line); z-index: 0; }
+        .stepper-fill { position: absolute; top: 17px; left: 34px; height: 2px; background: var(--mustard); z-index: 0; width: 0%; transition: width 0.35s ease; }
+        .step-item { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; z-index: 2; background: transparent; border: none; font-family: var(--font-body); }
+        .step-circle {
+            width: 34px; height: 34px; border-radius: 50%; background: var(--ink-raised);
+            border: 1.5px dashed var(--ink-line); color: var(--fog); display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 13px; font-family: var(--font-mono); transition: all 0.25s;
+        }
+        .step-item.active .step-circle { background: var(--mustard); border-style: solid; border-color: var(--mustard); color: var(--cream); box-shadow: 0 0 0 5px var(--mustard-wash); }
+        .step-item.done .step-circle { background: var(--ink-raised); border-style: solid; border-color: var(--olive); color: var(--olive); }
+        .step-item span { font-size: 11px; font-weight: 600; color: var(--fog); letter-spacing: 0.2px; }
+        .step-item.active span { color: var(--mustard); }
+        .step-item.done span { color: var(--olive); }
+
+        .step-card { background: var(--ink-raised); border: 1px solid var(--ink-line); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; transition: border-color 0.2s; }
+        .step-card.active { border-color: rgba(227,167,48,0.35); }
+        .step-header { padding: 14px 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; background: none; border: none; width: 100%; color: inherit; }
+        .step-header:hover { background: rgba(255,255,255,0.02); }
+        .step-title { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; color: var(--cream); font-family: var(--font-body); }
+        .step-number { background: var(--ink); color: var(--mustard); border: 1px solid var(--ink-line); width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; font-family: var(--font-mono); }
+        .step-arrow { transition: transform 0.3s ease; color: var(--fog); font-size: 11px; }
+        .step-card.active .step-arrow { transform: rotate(180deg); color: var(--mustard); }
+
+        .step-content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.4s ease; padding: 0 18px; }
+        .step-card.active .step-content { max-height: 1000px; padding: 4px 18px 18px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 11.5px; font-weight: 600; color: var(--fog); margin-bottom: 6px; letter-spacing: 0.2px; text-transform: uppercase; }
+        .form-group label .req { color: var(--tomato); margin-left: 2px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 10px 13px; border: 1px solid var(--ink-line); border-radius: var(--radius-sm);
+            font-size: 13.5px; font-family: var(--font-mono); color: var(--cream); background: var(--ink); transition: all 0.18s;
+        }
+        .form-group input::placeholder { color: #5c5246; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--mustard); box-shadow: 0 0 0 3px var(--mustard-wash); }
+        .form-group input.invalid { border-color: var(--tomato); box-shadow: 0 0 0 3px rgba(193,68,45,0.15); }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+        .step-footer { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--ink-line); display: flex; justify-content: flex-end; }
+        .step-footer p { font-size: 12px; color: var(--fog); }
+
+        .btn { padding: 10px 18px; border: none; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all 0.18s; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--font-body); }
+        .btn-primary { background: var(--mustard); color: var(--cream); }
+        .btn-primary:hover { background: #f0b545; transform: translateY(-1px); }
+
+        .sticky-actions { margin-top: auto; padding-top: 16px; border-top: 1px dashed var(--ink-line); display: flex; flex-direction: column; gap: 8px; }
+        .action-row { display: flex; gap: 8px; }
+        .btn-success { background: var(--olive); color: var(--cream); flex: 1.4; padding: 13px; font-size: 14px; }
+        .btn-success:hover { background: var(--olive-deep); transform: translateY(-1px); }
+        .btn-ghost { background: transparent; color: var(--fog); border: 1px solid var(--ink-line); flex: 1; padding: 13px; font-size: 13px; }
+        .btn-ghost:hover { color: var(--cream); border-color: var(--fog); }
+        .btn-outline { background: transparent; color: var(--mustard); border: 1px solid rgba(227,167,48,0.4); width: 100%; padding: 11px; font-size: 13px; }
+        .btn-outline:hover { background: var(--mustard-wash); border-color: var(--mustard); }
+        .btn-outline:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .preview-panel { flex: 1; padding: 48px; display: flex; justify-content: center; align-items: flex-start; background: repeating-linear-gradient(135deg, rgba(0,0,0,0.015) 0 2px, transparent 2px 26px), #eee8da; overflow-y: auto; }
+
+        .a4-paper {
+            width: 210mm; min-height: 297mm; background: var(--paper); box-shadow: var(--shadow-paper);
+            padding: 20mm; font-family: 'Times New Roman', Times, serif; color: #1a1410; font-size: 14px;
+            line-height: 1.65; position: relative; word-wrap: break-word;
+        }
+
+        .letter-header { text-align: center; border-bottom: 2px solid var(--mustard-deep); padding-bottom: 15px; margin-bottom: 25px; }
+        .letter-header h1 { font-size: 30px; color: var(--tomato-deep); letter-spacing: 1.5px; margin-bottom: 5px; font-weight: 700; font-family: 'Georgia', 'Times New Roman', serif; }
+        .letter-header p { font-size: 12px; color: #555; margin: 2px 0; }
+        .letter-header .fssai { font-size: 11px; color: #666; margin-top: 8px; font-style: italic; }
+
+        .letter-title { text-align: center; font-weight: bold; font-size: 18px; margin: 20px 0; text-decoration: underline; letter-spacing: 1px; }
+        .date-field { text-align: right; margin-bottom: 20px; font-weight: bold; font-family: Arial, sans-serif; font-size: 13px; }
+
+        .letter-body p { margin-bottom: 12px; text-align: justify; }
+
+        .details-box { border-left: 4px solid var(--mustard-deep); background: #f3e5c3; padding: 12px 15px; margin: 15px 0; font-size: 14px; border-radius: 0 6px 6px 0; }
+        .details-box p { margin-bottom: 6px; }
+
+        .signature-section { margin-top: 50px; display: flex; justify-content: space-between; }
+        .signature-block { width: 45%; }
+        .signature-line { border-top: 1px solid #000; margin-top: 40px; padding-top: 5px; font-weight: bold; }
+
+        .letter-footer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; font-size: 11px; color: #666; }
+
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(10, 8, 6, 0.65); backdrop-filter: blur(2px); z-index: 100; align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+        .modal-box { background: var(--ink-raised); border: 1px solid var(--ink-line); color: var(--cream); width: 92%; max-width: 760px; max-height: 82vh; border-radius: var(--radius); display: flex; flex-direction: column; box-shadow: var(--shadow-panel); }
+        .modal-header { padding: 18px 22px; border-bottom: 1px dashed var(--ink-line); display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { font-size: 16px; font-family: var(--font-display); font-weight: 600; }
+        .modal-close { background: var(--ink); border: 1px solid var(--ink-line); width: 28px; height: 28px; border-radius: 50%; font-size: 14px; cursor: pointer; color: var(--fog); }
+        .modal-close:hover { color: var(--tomato); border-color: var(--tomato); }
+        .modal-toolbar { padding: 14px 22px 0; display: flex; gap: 10px; align-items: center; }
+        .modal-toolbar input { flex: 1; padding: 9px 12px; border-radius: var(--radius-sm); border: 1px solid var(--ink-line); background: var(--ink); color: var(--cream); font-size: 13px; font-family: var(--font-body); }
+        .modal-toolbar input:focus { outline: none; border-color: var(--mustard); }
+        .modal-refresh { background: var(--ink); border: 1px solid var(--ink-line); color: var(--fog); width: 34px; height: 34px; border-radius: var(--radius-sm); cursor: pointer; font-size: 14px; }
+        .modal-refresh:hover { color: var(--mustard); border-color: var(--mustard); }
+        .modal-body { padding: 14px 22px 22px; overflow-y: auto; }
+        .history-count-line { font-size: 12.5px; color: var(--fog); margin: 4px 0 14px; font-family: var(--font-mono); }
+        table.history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        table.history-table th, table.history-table td { text-align: left; padding: 10px 10px; border-bottom: 1px solid var(--ink-line); }
+        table.history-table th { color: var(--fog); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+        table.history-table td.num { font-family: var(--font-mono); color: var(--mustard); }
+        table.history-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+        .empty-state { text-align: center; color: var(--fog); padding: 40px 0; font-size: 13px; }
+        .empty-state .big { font-size: 32px; margin-bottom: 10px; }
+        .skeleton-row { height: 18px; border-radius: 4px; background: linear-gradient(90deg, var(--ink) 25%, var(--ink-line) 50%, var(--ink) 75%); background-size: 200% 100%; animation: shimmer 1.3s infinite; margin-bottom: 12px; }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+        .toast-stack { position: fixed; bottom: 24px; right: 24px; z-index: 200; display: flex; flex-direction: column; gap: 10px; align-items: flex-end; }
+        .toast { background: var(--ink-raised); border: 1px solid var(--ink-line); color: var(--cream); padding: 12px 16px; border-radius: var(--radius-sm); font-size: 13px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-panel); animation: toast-in 0.25s ease; max-width: 300px; }
+        .toast.ok { border-color: var(--olive); }
+        .toast.err { border-color: var(--tomato); }
+        .toast .stamp { font-family: var(--font-mono); font-weight: 700; font-size: 11px; padding: 3px 8px; border-radius: 4px; transform: rotate(-6deg); letter-spacing: 0.5px; flex-shrink: 0; }
+        .toast.ok .stamp { background: rgba(122,138,82,0.18); color: var(--olive); border: 1.5px solid var(--olive); }
+        .toast.err .stamp { background: rgba(193,68,45,0.18); color: var(--tomato); border: 1.5px solid var(--tomato); }
+        @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media print {
+            body { background: white; }
+            .form-panel { display: none !important; }
+            .modal-overlay, .toast-stack { display: none !important; }
+            .preview-panel { padding: 0; background: none; width: 100%; display: block; }
+            .a4-paper { box-shadow: none; width: 100%; min-height: auto; padding: 15mm; margin: 0; }
+            @page { size: A4; margin: 0; }
+        }
+
+        @media (max-width: 1024px) {
+            .app-container { flex-direction: column; }
+            .form-panel { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid var(--ink-line); }
+            .preview-panel { padding: 20px; }
+            .a4-paper { width: 100%; min-height: auto; padding: 15mm; }
+            .toast-stack { right: 12px; bottom: 12px; left: 12px; align-items: stretch; }
+            .toast { max-width: none; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container" id="appContainer">
+    <aside class="form-panel">
+        <header class="app-header">
+            <div class="header-top-row">
+                <div class="brand-mark">
+                    <div class="brand-icon">🥪</div>
+                    <div>
+                        <h1>Sandwich Ghar Ka</h1>
+                        <p>OFFER LETTER DESK · FSSAI 21525011001534</p>
+                    </div>
+                </div>
+                <button class="history-badge" onclick="openHistory()" id="historyBadge" aria-haspopup="dialog"><span class="dot"></span>…</button>
+            </div>
+        </header>
+
+        <div class="stepper" role="tablist" aria-label="Form steps">
+            <div class="stepper-fill" id="stepperFill"></div>
+            <button class="step-item active" data-step="1" onclick="goToStep(1)" role="tab">
+                <div class="step-circle">1</div>
+                <span>Candidate</span>
+            </button>
+            <button class="step-item" data-step="2" onclick="goToStep(2)" role="tab">
+                <div class="step-circle">2</div>
+                <span>Details</span>
+            </button>
+            <button class="step-item" data-step="3" onclick="goToStep(3)" role="tab">
+                <div class="step-circle">3</div>
+                <span>Generate</span>
+            </button>
+        </div>
+
+        <div class="step-card active" id="step1">
+            <button class="step-header" onclick="toggleStep(1)">
+                <div class="step-title"><span class="step-number">1</span> Candidate &amp; Contacts</div>
+                <span class="step-arrow">▼</span>
+            </button>
+            <div class="step-content">
+                <div class="form-group">
+                    <label>Full Name <span class="req">*</span></label>
+                    <input type="text" id="fullName" value="Priya Sharma" oninput="updatePreview()" placeholder="e.g. Priya Sharma">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Reporting Person 1</label>
+                        <input type="text" id="repPerson1" value="Manager" oninput="updatePreview()">
+                    </div>
+                    <div class="form-group">
+                        <label>Contact No. 1</label>
+                        <input type="text" id="contact1" value="9876543210" oninput="updatePreview()">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Reporting Person 2</label>
+                        <input type="text" id="repPerson2" value="Supervisor" oninput="updatePreview()">
+                    </div>
+                    <div class="form-group">
+                        <label>Contact No. 2</label>
+                        <input type="text" id="contact2" value="9876543211" oninput="updatePreview()">
+                    </div>
+                </div>
+                <div class="step-footer">
+                    <button class="btn btn-primary" onclick="goToStep(2)">Next: Internship Details →</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="step-card" id="step2">
+            <button class="step-header" onclick="toggleStep(2)">
+                <div class="step-title"><span class="step-number">2</span> Internship Details</div>
+                <span class="step-arrow">▼</span>
+            </button>
+            <div class="step-content">
+                <div class="form-group">
+                    <label>Internship Role / Designation</label>
+                    <input type="text" id="internRole" value="Food Service" oninput="updatePreview()" placeholder="e.g. Kitchen Staff, Delivery, Counter Service">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="startDate" value="2026-07-15" oninput="updatePreview()">
+                    </div>
+                    <div class="form-group">
+                        <label>Duration (Months)</label>
+                        <input type="number" id="duration" value="6" min="1" oninput="updatePreview()">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Stipend (₹)</label>
+                        <input type="number" id="stipend" value="5000" oninput="updatePreview()">
+                    </div>
+                    <div class="form-group">
+                        <label>Min. Days for Cert.</label>
+                        <input type="number" id="minDays" value="183" oninput="updatePreview()">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Daily Hours</label>
+                        <input type="number" id="dailyHours" value="6" oninput="updatePreview()">
+                    </div>
+                    <div class="form-group">
+                        <label>Time Slot</label>
+                        <input type="text" id="timeSlot" value="10am to 4pm" oninput="updatePreview()">
+                    </div>
+                </div>
+                <div class="step-footer">
+                    <button class="btn btn-primary" onclick="goToStep(3)">Next: Dates &amp; Generate →</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="step-card" id="step3">
+            <button class="step-header" onclick="toggleStep(3)">
+                <div class="step-title"><span class="step-number">3</span> Dates &amp; Deadlines</div>
+                <span class="step-arrow">▼</span>
+            </button>
+            <div class="step-content">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Offer Letter Date</label>
+                        <input type="date" id="offerDate" value="2026-07-09" oninput="updatePreview()">
+                    </div>
+                    <div class="form-group">
+                        <label>Acceptance Deadline</label>
+                        <input type="date" id="deadline" value="2026-07-14" oninput="updatePreview()">
+                    </div>
+                </div>
+                <div class="step-footer">
+                    <p>Review the letter on the right, save it to history, then print.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="sticky-actions">
+            <button class="btn btn-outline" onclick="saveToHistory()" id="saveBtn">💾 Save to History</button>
+            <div class="action-row">
+                <button class="btn btn-ghost" onclick="resetForm()" title="Clear the form for a new candidate">↺ New Letter</button>
+                <button class="btn btn-success" onclick="window.print()">🖨️ Print / PDF</button>
+            </div>
+        </div>
+    </aside>
+
+    <main class="preview-panel">
+        <div class="a4-paper" id="letterPreview">
+            <div class="letter-header">
+                <h1>SANDWICH GHAR KA</h1>
+                <p>Plot 860, Room B17, Charkop Yashodeep Society, Charkop Sector 8, Kandivali West, Mumbai - 400067</p>
+                <p class="fssai">FSSAI Registration No: 21525011001534 | Valid till: 29-10-2028</p>
+            </div>
+
+            <div class="date-field">Date: <span id="prevOfferDate">9th July 2026</span></div>
+            <div class="letter-title">OFFER LETTER</div>
+
+            <div class="letter-body">
+                <p>Dear <strong id="prevFirstName">Priya</strong>,</p>
+
+                <p>In reference to your application, we would like to congratulate you on being selected for the position of <strong id="prevRole">Food Service</strong> intern with <strong>Sandwich Ghar Ka</strong>. Your training is scheduled to start effective <strong id="prevStartDate">15th July 2026</strong> for <strong id="prevDuration">6 months</strong>.</p>
+
+                <div class="details-box">
+                    <p><strong>No. of Hours to be put in:</strong> <span id="prevHours">6</span> hours per day (<span id="prevTime">10am to 4pm</span>)</p>
+                    <p><strong>Stipend:</strong> ₹ <span id="prevStipend">5000</span>/- per month</p>
+                    <p><strong>Reporting Contact Person:</strong> <span id="prevRep1">Manager</span> (Mobile No. <span id="prevCon1">9876543210</span>) & <span id="prevRep2">Supervisor</span> (Mobile No. <span id="prevCon2">9876543211</span>)</p>
+                </div>
+
+                <p>As a temporary intern, you will not receive any of the employee benefits that regular employees of the firm receive, including, but not limited to, health insurance, vacation or sick pay, paid holidays, or provident fund etc.</p>
+
+                <p>Your internship will begin from <strong id="prevStartDate2">15th July 2026</strong>. However, your internship with the firm is <strong>"at-will,"</strong> which means that the firm may terminate your internship at any time, with or without cause and with or without notice.</p>
+
+                <p>During your internship, you may have access to trade secrets and confidential business information belonging to the firm. By accepting this offer of temporary internship, you acknowledge that you must keep all of this information strictly confidential, and refrain from using it for your own purposes or from disclosing it to anyone outside the firm.</p>
+
+                <p>Certificate will be given on completion of minimum <span id="prevMonths">6</span> months / <span id="prevDays">183</span> days.</p>
+
+                <p>Congratulations and we look forward to working with you.</p>
+
+                <p>Please indicate your acceptance of this offer by signing below and share with us the signed and scanned copy of this letter <strong>OR</strong> send us the email confirmation before <strong id="prevDeadline">14th July 2026</strong>. If you have any questions, please do not hesitate to contact us.</p>
+            </div>
+
+            <div class="signature-section">
+                <div class="signature-block">
+                    <p>Yours sincerely,</p>
+                    <p><strong>for Sandwich Ghar Ka</strong></p>
+                    <div class="signature-line">
+                        <strong id="prevSignatory">Manager</strong>
+                    </div>
+                </div>
+                <div class="signature-block" style="text-align: center;">
+                    <p>Accepted</p>
+                    <div class="signature-line">
+                        <strong id="prevName">Priya Sharma</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="letter-footer">
+                <p>This is a computer-generated offer letter. FSSAI Reg. No: 21525011001534</p>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div class="modal-overlay" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2 id="historyModalTitle">📜 Offer Letters Generated</h2>
+            <button class="modal-close" onclick="closeHistory()" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-toolbar">
+            <input type="text" id="historySearch" placeholder="Search by candidate name…" oninput="renderHistoryTable()">
+            <button class="modal-refresh" onclick="openHistory()" title="Refresh">⟳</button>
+        </div>
+        <div class="modal-body">
+            <div class="history-count-line" id="historyCountLine">Loading…</div>
+            <div id="historyTableWrap"></div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+    const SUPABASE_URL = 'https://worvbgprnndrvhhlaeig.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_jXl_tc9KwbRSBpT_Hyk5Nw_j4FVfSrQ';
+    const TABLE = 'offer_letters';
+
+    let historyRowsCache = [];
+
+    async function supabaseInsert(row) {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(row)
+        });
+        if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(errText);
+        }
+        return res.json();
+    }
+
+    async function supabaseFetchAll() {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?select=*&order=created_at.desc`, {
+            headers: {
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+            }
+        });
+        if (!res.ok) {
+            const errText = await res.text();
+            throw new Error(errText);
+        }
+        return res.json();
+    }
+
+    async function refreshHistoryCount() {
+        const badge = document.getElementById('historyBadge');
+        try {
+            const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?select=id`, {
+                headers: {
+                    'apikey': SUPABASE_ANON_KEY,
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'Prefer': 'count=exact'
+                }
+            });
+            const countHeader = res.headers.get('content-range');
+            let count = 0;
+            if (countHeader && countHeader.includes('/')) {
+                count = parseInt(countHeader.split('/')[1], 10) || 0;
+            } else {
+                const data = await res.json();
+                count = Array.isArray(data) ? data.length : 0;
+            }
+            badge.innerHTML = `<span class="dot"></span>${count} generated`;
+        } catch (e) {
+            badge.innerHTML = `<span class="dot"></span>offline`;
+        }
+    }
+
+    function showToast(message, type = 'ok', stampText = null) {
+        const stack = document.getElementById('toastStack');
+        const el = document.createElement('div');
+        el.className = `toast ${type}`;
+        const stamp = stampText || (type === 'ok' ? 'SAVED' : 'FAILED');
+        el.innerHTML = `<span class="stamp">${stamp}</span><span>${message}</span>`;
+        stack.appendChild(el);
+        setTimeout(() => {
+            el.style.transition = 'opacity 0.3s, transform 0.3s';
+            el.style.opacity = '0';
+            el.style.transform = 'translateX(20px)';
+            setTimeout(() => el.remove(), 320);
+        }, 3600);
+    }
+
+    function currentFormData() {
+        return {
+            full_name: document.getElementById('fullName').value,
+            intern_role: document.getElementById('internRole').value,
+            start_date: document.getElementById('startDate').value || null,
+            duration_months: parseInt(document.getElementById('duration').value, 10) || null,
+            stipend: parseFloat(document.getElementById('stipend').value) || null,
+            min_days: parseInt(document.getElementById('minDays').value, 10) || null,
+            daily_hours: parseFloat(document.getElementById('dailyHours').value) || null,
+            time_slot: document.getElementById('timeSlot').value,
+            rep_person1: document.getElementById('repPerson1').value,
+            contact1: document.getElementById('contact1').value,
+            rep_person2: document.getElementById('repPerson2').value,
+            contact2: document.getElementById('contact2').value,
+            offer_date: document.getElementById('offerDate').value || null,
+            deadline: document.getElementById('deadline').value || null
+        };
+    }
+
+    function validateRequired() {
+        const nameEl = document.getElementById('fullName');
+        if (!nameEl.value.trim()) {
+            nameEl.classList.add('invalid');
+            goToStep(1);
+            nameEl.focus();
+            return false;
+        }
+        nameEl.classList.remove('invalid');
+        return true;
+    }
+
+    async function saveToHistory() {
+        const btn = document.getElementById('saveBtn');
+        if (!validateRequired()) {
+            showToast('Candidate name is required.', 'err', 'MISSING');
+            return;
+        }
+        btn.disabled = true;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = 'Saving…';
+        try {
+            await supabaseInsert(currentFormData());
+            showToast(`${document.getElementById('fullName').value}'s offer letter logged.`, 'ok', 'SAVED');
+            refreshHistoryCount();
+        } catch (e) {
+            showToast('Could not reach the database. Check your connection.', 'err', 'FAILED');
+            console.error(e);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+
+    function resetForm() {
+        if (!confirm('Clear all fields and start a new letter?')) return;
+        document.getElementById('fullName').value = '';
+        document.getElementById('repPerson1').value = 'Manager';
+        document.getElementById('contact1').value = '';
+        document.getElementById('repPerson2').value = 'Supervisor';
+        document.getElementById('contact2').value = '';
+        document.getElementById('internRole').value = 'Food Service';
+        document.getElementById('startDate').value = '';
+        document.getElementById('duration').value = '6';
+        document.getElementById('stipend').value = '5000';
+        document.getElementById('minDays').value = '183';
+        document.getElementById('dailyHours').value = '6';
+        document.getElementById('timeSlot').value = '10am to 4pm';
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('offerDate').value = today;
+        document.getElementById('deadline').value = '';
+        document.getElementById('fullName').classList.remove('invalid');
+        updatePreview();
+        goToStep(1);
+        showToast('Form cleared — ready for the next candidate.', 'ok', 'NEW');
+        document.getElementById('fullName').focus();
+    }
+
+    function fmtDateShort(d) {
+        if (!d) return '—';
+        const date = new Date(d);
+        if (isNaN(date.getTime())) return '—';
+        return date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    async function openHistory() {
+        const modal = document.getElementById('historyModal');
+        modal.classList.add('open');
+        document.getElementById('historySearch').value = '';
+        const countLine = document.getElementById('historyCountLine');
+        const wrap = document.getElementById('historyTableWrap');
+        countLine.textContent = '';
+        wrap.innerHTML = `
+            <div class="skeleton-row" style="width: 100%;"></div>
+            <div class="skeleton-row" style="width: 92%;"></div>
+            <div class="skeleton-row" style="width: 96%;"></div>`;
+        try {
+            historyRowsCache = await supabaseFetchAll();
+            renderHistoryTable();
+        } catch (e) {
+            countLine.textContent = '';
+            wrap.innerHTML = '<div class="empty-state"><div class="big">⚠️</div>Could not load history. Please check your connection.</div>';
+            console.error(e);
+        }
+    }
+
+    function renderHistoryTable() {
+        const countLine = document.getElementById('historyCountLine');
+        const wrap = document.getElementById('historyTableWrap');
+        const q = (document.getElementById('historySearch').value || '').toLowerCase().trim();
+        const rows = q
+            ? historyRowsCache.filter(r => (r.full_name || '').toLowerCase().includes(q))
+            : historyRowsCache;
+
+        countLine.textContent = q
+            ? `${rows.length} of ${historyRowsCache.length} letters match "${q}"`
+            : `Total offer letters generated: ${historyRowsCache.length}`;
+
+        if (historyRowsCache.length === 0) {
+            wrap.innerHTML = '<div class="empty-state"><div class="big">🥪</div>No offer letters saved yet.<br>Generate one and click "Save to History".</div>';
+            return;
+        }
+        if (rows.length === 0) {
+            wrap.innerHTML = '<div class="empty-state"><div class="big">🔎</div>No candidates match your search.</div>';
+            return;
+        }
+
+        let html = '<table class="history-table"><thead><tr><th>#</th><th>Name</th><th>Role</th><th>Start Date</th><th>Duration</th><th>Stipend</th><th>Generated On</th></tr></thead><tbody>';
+        rows.forEach((r) => {
+            const idx = historyRowsCache.indexOf(r);
+            html += `<tr>
+                <td class="num">${historyRowsCache.length - idx}</td>
+                <td>${r.full_name || '—'}</td>
+                <td>${r.intern_role || '—'}</td>
+                <td>${fmtDateShort(r.start_date)}</td>
+                <td>${r.duration_months ? r.duration_months + ' mo' : '—'}</td>
+                <td class="num">₹${r.stipend ?? '—'}</td>
+                <td>${fmtDateShort(r.created_at)}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        wrap.innerHTML = html;
+    }
+
+    function closeHistory() {
+        document.getElementById('historyModal').classList.remove('open');
+    }
+
+    document.getElementById('historyModal').addEventListener('click', (e) => {
+        if (e.target.id === 'historyModal') closeHistory();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeHistory();
+    });
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '_______________';
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return '_______________';
+
+        const day = date.getDate();
+        const month = date.toLocaleString('en-US', { month: 'long' });
+        const year = date.getFullYear();
+
+        let suffix = 'th';
+        if (day == 1 || day == 21 || day == 31) suffix = 'st';
+        else if (day == 2 || day == 22) suffix = 'nd';
+        else if (day == 3 || day == 23) suffix = 'rd';
+
+        return `${day}${suffix} ${month} ${year}`;
+    }
+
+    function updatePreview() {
+        const fullNameEl = document.getElementById('fullName');
+        const fullName = fullNameEl.value;
+        if (fullName.trim()) fullNameEl.classList.remove('invalid');
+        const firstName = fullName.split(' ')[0] || '_______';
+
+        document.getElementById('prevName').textContent = fullName || '_______________';
+        document.getElementById('prevFirstName').textContent = firstName;
+        document.getElementById('prevSignatory').textContent = document.getElementById('repPerson1').value;
+
+        document.getElementById('prevRole').textContent = document.getElementById('internRole').value;
+
+        document.getElementById('prevStartDate').textContent = formatDate(document.getElementById('startDate').value);
+        document.getElementById('prevStartDate2').textContent = formatDate(document.getElementById('startDate').value);
+
+        const duration = document.getElementById('duration').value;
+        document.getElementById('prevDuration').textContent = duration + ' months';
+        document.getElementById('prevMonths').textContent = duration;
+
+        document.getElementById('prevStipend').textContent = document.getElementById('stipend').value;
+        document.getElementById('prevHours').textContent = document.getElementById('dailyHours').value;
+        document.getElementById('prevTime').textContent = document.getElementById('timeSlot').value;
+
+        document.getElementById('prevRep1').textContent = document.getElementById('repPerson1').value;
+        document.getElementById('prevCon1').textContent = document.getElementById('contact1').value;
+        document.getElementById('prevRep2').textContent = document.getElementById('repPerson2').value;
+        document.getElementById('prevCon2').textContent = document.getElementById('contact2').value;
+
+        document.getElementById('prevDays').textContent = document.getElementById('minDays').value;
+
+        document.getElementById('prevOfferDate').textContent = formatDate(document.getElementById('offerDate').value);
+        document.getElementById('prevDeadline').textContent = formatDate(document.getElementById('deadline').value);
+    }
+
+    function updateStepperUI(stepNum) {
+        document.querySelectorAll('.step-item').forEach(item => {
+            const s = parseInt(item.dataset.step, 10);
+            item.classList.remove('active', 'done');
+            if (s < stepNum) item.classList.add('done');
+            if (s === stepNum) item.classList.add('active');
+        });
+        const fill = document.getElementById('stepperFill');
+        const pct = ((stepNum - 1) / 2) * 100;
+        fill.style.width = pct + '%';
+    }
+
+    function goToStep(stepNum) {
+        document.querySelectorAll('.step-card').forEach(card => card.classList.remove('active'));
+
+        const targetCard = document.getElementById(`step${stepNum}`);
+        if (targetCard) {
+            targetCard.classList.add('active');
+            targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        updateStepperUI(stepNum);
+    }
+
+    function toggleStep(stepNum) {
+        const card = document.getElementById(`step${stepNum}`);
+        if (card.classList.contains('active')) {
+            card.classList.remove('active');
+        } else {
+            goToStep(stepNum);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        updatePreview();
+        goToStep(1);
+        refreshHistoryCount();
+    });
+</script>
+
+</body>
+</html>
