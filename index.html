@@ -542,9 +542,19 @@
                             <input class="form-input" type="number" id="duration" value="6" min="1" oninput="updatePreview()">
                         </div>
                         <div class="form-group">
+                            <label class="form-label">Internship Type</label>
+                            <select class="form-input" id="stipendType" onchange="updatePreview()">
+                                <option value="paid">Paid</option>
+                                <option value="unpaid">Unpaid</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row" id="stipendAmountRow">
+                        <div class="form-group" style="flex:2;">
                             <label class="form-label">Stipend (₹)</label>
                             <input class="form-input" type="number" id="stipend" value="5000" oninput="updatePreview()">
                         </div>
+                        <div class="form-group" style="flex:1;"></div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -614,7 +624,7 @@
                 <p>In reference to your application, we would like to congratulate you on being selected for the position of <strong id="pRole">Food Service</strong> intern with <strong>Sandwich Ghar Ka</strong>. Your training is scheduled to start effective <strong id="pStart">15th July 2026</strong> for <strong id="pDuration">6 months</strong>.</p>
                 <div class="details-box">
                     <p><strong>Hours:</strong> <span id="pHours">6</span> hrs/day (<span id="pTime">10am to 4pm</span>)</p>
-                    <p><strong>Stipend:</strong> ₹ <span id="pStipend">5000</span>/- per month</p>
+                    <p id="pStipendLine"><strong>Stipend:</strong> ₹ <span id="pStipend">5000</span>/- per month</p>
                     <p><strong>Reporting to:</strong> <span id="pRep1">Manager</span> (<span id="pCon1">9876543210</span>) & <span id="pRep2">Supervisor</span> (<span id="pCon2">9876543211</span>)</p>
                 </div>
                 <p>As a temporary intern, you will not receive any of the employee benefits that regular employees of the firm receive, including, but not limited to, health insurance, vacation or sick pay, paid holidays, or provident fund etc.</p>
@@ -850,7 +860,7 @@
         ge('fullName').value=''; ge('repPerson1').value='Manager'; ge('contact1').value='';
         ge('repPerson2').value='Supervisor'; ge('contact2').value='';
         ge('internRole').value='Food Service'; ge('startDate').value=''; ge('endDate').value='';
-        ge('duration').value='6'; ge('stipend').value='5000'; ge('dailyHours').value='6'; ge('timeSlot').value='10am to 4pm';
+        ge('duration').value='6'; ge('stipendType').value='paid'; ge('stipend').value='5000'; ge('dailyHours').value='6'; ge('timeSlot').value='10am to 4pm';
         const today = new Date().toISOString().split('T')[0];
         ge('offerDate').value=today; ge('deadline').value='';
         ge('fullName').classList.remove('invalid');
@@ -871,7 +881,15 @@
             ge('pStart').textContent = ge('pStart2').textContent = fmtDate(ge('startDate').value);
             ge('pDuration').textContent = ge('duration').value+' months';
             ge('pMonths').textContent = ge('duration').value;
-            ge('pStipend').textContent = ge('stipend').value;
+            const stype = ge('stipendType').value;
+            const stipRow = ge('stipendAmountRow');
+            if (stype === 'unpaid') {
+                stipRow.style.display = 'none';
+                ge('pStipendLine').innerHTML = '<strong>Stipend:</strong> Unpaid — No stipend will be provided.';
+            } else {
+                stipRow.style.display = '';
+                ge('pStipendLine').innerHTML = '<strong>Stipend:</strong> ₹ <span id="pStipend">'+ge('stipend').value+'</span>/- per month';
+            }
             ge('pHours').textContent = ge('dailyHours').value;
             ge('pTime').textContent = ge('timeSlot').value;
             ge('pRep1').textContent = ge('repPerson1').value;
@@ -932,7 +950,10 @@
         try {
             const tbl = docType==='letter'?T_LETTER:T_CERT;
             const rows = await apiGet(tbl);
-            if (docType==='letter') letterCache=rows; else certCache=rows;
+            if (docType==='letter') { letterCache = rows.map(r => ({
+                ...r,
+                stipend_type: r.stipend_type || (r.stipend && parseFloat(r.stipend) > 0 ? 'paid' : 'unpaid')
+            })); } else { certCache=rows; }
             renderHistory();
         } catch(e) {
             cl.textContent='';
@@ -952,7 +973,7 @@
 
         const tbl = docType==='letter'?T_LETTER:T_CERT;
         let hdr = '<th>#</th><th>Name</th><th>Role</th><th>Start</th><th>Duration</th><th>Saved</th>';
-        if (docType==='letter') hdr += '<th>Stipend</th>';
+        if (docType==='letter') hdr += '<th>Type</th><th>Stipend</th>';
 
         let html = `<table><thead><tr>${hdr}</tr></thead><tbody>`;
         filtered.forEach((r,i) => {
@@ -963,7 +984,11 @@
                 <td>${fmtShort(r.start_date)}</td>
                 <td>${r.duration_months?r.duration_months+' mo':'—'}</td>
                 <td>${fmtShort(r.created_at)}</td>`;
-            if (docType==='letter') row += `<td class="num">₹${r.stipend??'—'}</td>`;
+            if (docType==='letter') {
+                const type = r.stipend_type || 'paid';
+                row += `<td>${type==='unpaid'?'<span style="color:#d97706;">Unpaid</span>':'Paid'}</td>`;
+                row += `<td class="num">${type==='unpaid'?'—':'₹'+(r.stipend??'—')}</td>`;
+            }
             row += '</tr>';
             html += row;
         });
